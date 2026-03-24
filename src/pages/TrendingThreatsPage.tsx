@@ -1,105 +1,31 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, AlertTriangle, Shield, ChevronRight } from "lucide-react";
+import {
+  TrendingUp, AlertTriangle, Shield, ChevronRight, ChevronDown, ChevronUp,
+  Loader2, RefreshCw, Users, Globe, Eye,
+} from "lucide-react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 
-const trendingThreats = [
-  {
-    rank: 1,
-    name: "AI-Powered Phishing",
-    description: "Scammers now use AI to write perfect fake emails and messages that look exactly like real ones from banks, companies, or even your friends.",
-    example: "You get an email from your 'bank' with perfect grammar and your real name, asking you to verify your account through a fake link.",
-    risk: "Very High",
-    trend: "Rising Fast",
-  },
-  {
-    rank: 2,
-    name: "UPI / Digital Payment Fraud",
-    description: "Fraudsters trick people into sending money through UPI apps by pretending to be customer support, sellers, or sending fake payment requests.",
-    example: "Someone calls pretending to be from your payment app and asks you to click a 'refund' link — which actually takes money from your account.",
-    risk: "Very High",
-    trend: "Most Common",
-  },
-  {
-    rank: 3,
-    name: "Deepfake Video & Voice Scams",
-    description: "Criminals use AI to create fake videos or clone someone's voice to trick people into sending money or sharing private information.",
-    example: "You get a video call from someone who looks and sounds like your boss, asking you to urgently transfer money.",
-    risk: "High",
-    trend: "Rising Fast",
-  },
-  {
-    rank: 4,
-    name: "Fake Job & Work-From-Home Scams",
-    description: "Scammers post fake job offers on social media or messaging apps, asking victims to pay registration fees or share personal details.",
-    example: "You see a job ad offering ₹50,000/month for simple data entry. After 'joining,' they ask you to pay for training materials.",
-    risk: "High",
-    trend: "Very Common",
-  },
-  {
-    rank: 5,
-    name: "QR Code Scams",
-    description: "Fraudsters share QR codes claiming you'll receive money, but scanning the code actually sends money from your account.",
-    example: "A buyer on a marketplace says they'll pay you via QR code, but the code is actually a payment request that debits your account.",
-    risk: "High",
-    trend: "Rising",
-  },
-  {
-    rank: 6,
-    name: "Investment & Crypto Fraud",
-    description: "Fake trading apps and crypto platforms promise huge returns. Victims invest real money into platforms that are completely fake.",
-    example: "You're added to a WhatsApp group showing 'live trading profits.' You invest, see fake gains, but can never withdraw your money.",
-    risk: "Very High",
-    trend: "Very Common",
-  },
-  {
-    rank: 7,
-    name: "Social Media Impersonation",
-    description: "Scammers create fake profiles of real people to trick their friends and family into sending money or sharing private info.",
-    example: "Your friend's 'new account' messages you saying they're in trouble and need money urgently — but it's a scammer.",
-    risk: "Medium",
-    trend: "Very Common",
-  },
-  {
-    rank: 8,
-    name: "Ransomware Attacks",
-    description: "Hackers lock your files or entire device and demand payment to unlock them. This now targets individuals, not just companies.",
-    example: "You download a free software from an unknown site. Suddenly all your photos and documents are locked with a ransom note.",
-    risk: "Very High",
-    trend: "Rising",
-  },
-  {
-    rank: 9,
-    name: "Fake Customer Care Numbers",
-    description: "When you search for customer support online, scammers have placed fake numbers that appear in search results.",
-    example: "You Google your bank's helpline and call the first number — a scammer answers and asks for your card details to 'help' you.",
-    risk: "High",
-    trend: "Very Common",
-  },
-  {
-    rank: 10,
-    name: "Sextortion & Online Blackmail",
-    description: "Criminals trick people into sharing private photos or videos, then threaten to share them unless the victim pays.",
-    example: "Someone you met online asks for private photos. Later, they threaten to share them with your contacts unless you pay.",
-    risk: "Very High",
-    trend: "Rising",
-  },
-  {
-    rank: 11,
-    name: "SIM Swap Fraud",
-    description: "Fraudsters convince your mobile company to transfer your phone number to their SIM, giving them access to your OTPs and accounts.",
-    example: "Your phone suddenly has no signal. Meanwhile, the scammer is receiving your OTPs and draining your bank account.",
-    risk: "Very High",
-    trend: "Rising",
-  },
-  {
-    rank: 12,
-    name: "Fake Loan & Insurance Apps",
-    description: "Fraudulent apps offer instant loans but steal personal data, contacts, and photos — then use them for blackmail.",
-    example: "You download a loan app. It accesses your contacts and photos. After borrowing, they harass you and your contacts for repayment.",
-    risk: "Very High",
-    trend: "Very Common",
-  },
-];
+interface Threat {
+  rank: number;
+  name: string;
+  description: string;
+  real_world_example: string;
+  how_it_works: string;
+  warning_signs: string[];
+  what_to_do: string[];
+  risk_level: string;
+  trend: string;
+  affected_countries: string[];
+  victims_profile: string;
+}
+
+interface ThreatData {
+  last_updated: string;
+  threats: Threat[];
+}
 
 const riskColor: Record<string, string> = {
   "Very High": "text-destructive bg-destructive/10 border-destructive/20",
@@ -114,7 +40,140 @@ const trendBadge: Record<string, string> = {
   "Very Common": "bg-primary/10 text-primary",
 };
 
+const ThreatCard = ({ threat, index }: { threat: Threat; index: number }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.04 }}
+      className="rounded-lg border border-border bg-card shadow-card overflow-hidden"
+    >
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full p-5 text-left"
+      >
+        <div className="flex items-start gap-4">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary font-display text-sm font-bold text-foreground">
+            #{threat.rank}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <h3 className="font-display text-base font-bold text-foreground">
+                {threat.name}
+              </h3>
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${trendBadge[threat.trend] || "bg-muted text-muted-foreground"}`}>
+                {threat.trend}
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground">{threat.description}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${riskColor[threat.risk_level] || ""}`}>
+                {threat.risk_level} Risk
+              </span>
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Users className="h-3 w-3" /> {threat.victims_profile}
+              </span>
+            </div>
+          </div>
+          <div className="shrink-0 mt-1 text-muted-foreground">
+            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </div>
+        </div>
+      </button>
+
+      {expanded && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="border-t border-border px-5 pb-5 pt-4 space-y-4"
+        >
+          {/* Real-world example */}
+          <div className="rounded-md border border-destructive/20 bg-destructive/5 p-3">
+            <p className="text-xs font-bold text-destructive mb-1 flex items-center gap-1">
+              <Globe className="h-3 w-3" /> Real-World Incident
+            </p>
+            <p className="text-sm text-foreground">{threat.real_world_example}</p>
+          </div>
+
+          {/* How it works */}
+          <div>
+            <p className="text-xs font-bold text-foreground mb-1.5 flex items-center gap-1">
+              <Eye className="h-3 w-3 text-primary" /> How It Works
+            </p>
+            <p className="text-sm text-muted-foreground">{threat.how_it_works}</p>
+          </div>
+
+          {/* Warning signs */}
+          <div>
+            <p className="text-xs font-bold text-warning mb-1.5 flex items-center gap-1">
+              <AlertTriangle className="h-3 w-3" /> Warning Signs
+            </p>
+            <ul className="space-y-1">
+              {threat.warning_signs.map((sign, j) => (
+                <li key={j} className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
+                  {sign}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* What to do */}
+          <div>
+            <p className="text-xs font-bold text-safe mb-1.5 flex items-center gap-1">
+              <Shield className="h-3 w-3" /> What To Do
+            </p>
+            <ul className="space-y-1">
+              {threat.what_to_do.map((action, j) => (
+                <li key={j} className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-safe" />
+                  {action}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Affected regions */}
+          <div className="flex flex-wrap gap-1.5">
+            {threat.affected_countries.map((c) => (
+              <span key={c} className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                {c}
+              </span>
+            ))}
+          </div>
+        </motion.div>
+      )}
+    </motion.div>
+  );
+};
+
 const TrendingThreatsPage = () => {
+  const [data, setData] = useState<ThreatData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchThreats = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data: result, error: fnError } = await supabase.functions.invoke("trending-threats");
+      if (fnError) throw fnError;
+      if (result?.error) throw new Error(result.error);
+      setData(result);
+    } catch (e) {
+      console.error("Trending threats error:", e);
+      setError("Could not load trending threats. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchThreats();
+  }, []);
+
   return (
     <div className="container max-w-3xl py-8 pb-16">
       <motion.div
@@ -130,62 +189,59 @@ const TrendingThreatsPage = () => {
             Trending Cyber Threats
           </h1>
           <p className="mt-2 text-base text-muted-foreground">
-            The most common and fastest-rising cybercrimes happening right now. Stay informed, stay safe.
+            Real-world cybercrimes happening right now. Updated with the latest incidents and data.
           </p>
+          {data?.last_updated && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Last updated: {data.last_updated}
+            </p>
+          )}
         </div>
 
         {/* Alert banner */}
-        <div className="mb-8 rounded-lg border border-warning/30 bg-warning/5 p-4 flex items-start gap-3">
+        <div className="mb-6 rounded-lg border border-warning/30 bg-warning/5 p-4 flex items-start gap-3">
           <AlertTriangle className="h-5 w-5 text-warning mt-0.5 shrink-0" />
           <p className="text-sm text-muted-foreground">
-            <span className="font-semibold text-foreground">Stay alert!</span> These threats are actively affecting thousands of people every day. Learning about them is the first step to protecting yourself and your family.
+            <span className="font-semibold text-foreground">Live threat intelligence.</span> These are real cybercrimes actively affecting people worldwide. Tap any threat to see real incidents, warning signs, and what to do.
           </p>
         </div>
 
+        {/* Loading */}
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Fetching latest threat intelligence...</p>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && !loading && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-8 text-center">
+            <AlertTriangle className="mx-auto h-8 w-8 text-destructive mb-3" />
+            <p className="text-sm text-destructive font-medium mb-4">{error}</p>
+            <Button onClick={fetchThreats} variant="outline" className="gap-2">
+              <RefreshCw className="h-4 w-4" /> Try Again
+            </Button>
+          </div>
+        )}
+
         {/* Threats list */}
-        <div className="space-y-4">
-          {trendingThreats.map((threat, i) => (
-            <motion.div
-              key={threat.rank}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04 }}
-              className="rounded-lg border border-border bg-card p-5 shadow-card"
-            >
-              <div className="flex items-start gap-4">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary font-display text-sm font-bold text-foreground">
-                  #{threat.rank}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <h3 className="font-display text-base font-bold text-foreground">
-                      {threat.name}
-                    </h3>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${trendBadge[threat.trend] || "bg-muted text-muted-foreground"}`}>
-                      {threat.trend}
-                    </span>
-                  </div>
+        {data && !loading && (
+          <>
+            <div className="space-y-3">
+              {data.threats.map((threat, i) => (
+                <ThreatCard key={threat.rank} threat={threat} index={i} />
+              ))}
+            </div>
 
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {threat.description}
-                  </p>
-
-                  <div className="rounded-md border border-border bg-secondary/50 p-3 mb-3">
-                    <p className="text-xs font-medium text-muted-foreground mb-1">Real-life example:</p>
-                    <p className="text-sm text-foreground">{threat.example}</p>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Risk Level:</span>
-                    <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${riskColor[threat.risk] || ""}`}>
-                      {threat.risk}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+            {/* Refresh */}
+            <div className="mt-6 text-center">
+              <Button onClick={fetchThreats} variant="outline" size="sm" className="gap-2">
+                <RefreshCw className="h-3.5 w-3.5" /> Refresh Threats
+              </Button>
+            </div>
+          </>
+        )}
 
         {/* Bottom CTAs */}
         <div className="mt-10 space-y-3">
