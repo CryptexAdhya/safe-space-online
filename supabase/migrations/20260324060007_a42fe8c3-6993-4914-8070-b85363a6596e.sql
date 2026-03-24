@@ -1,0 +1,1 @@
+CREATE POLICY "Allow service role all" ON public.threat_cache FOR ALL TO service_role USING (true) WITH CHECK (true);
