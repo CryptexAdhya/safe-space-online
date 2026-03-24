@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import ResultPage from "./pages/ResultPage";
 import LearnPage from "./pages/LearnPage";
 import EmergencyPage from "./pages/EmergencyPage";
+import TrendingThreatsPage from "./pages/TrendingThreatsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
