@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import ResultPage from "./pages/ResultPage";
 import LearnPage from "./pages/LearnPage";
 import EmergencyPage from "./pages/EmergencyPage";
+import TrendingThreatsPage from "./pages/TrendingThreatsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
               <Route path="/result" element={<ResultPage />} />
               <Route path="/learn" element={<LearnPage />} />
               <Route path="/emergency" element={<EmergencyPage />} />
+              <Route path="/trending" element={<TrendingThreatsPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
