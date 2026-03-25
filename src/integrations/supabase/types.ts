@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      rate_limits: {
+        Row: {
+          endpoint: string
+          ip_address: string
+          request_time: string
+        }
+        Insert: {
+          endpoint: string
+          ip_address: string
+          request_time?: string
+        }
+        Update: {
+          endpoint?: string
+          ip_address?: string
+          request_time?: string
+        }
+        Relationships: []
+      }
       threat_cache: {
         Row: {
           data: Json
@@ -37,7 +55,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_rate_limit: {
+        Args: {
+          p_endpoint: string
+          p_ip: string
+          p_max_requests?: number
+          p_window_seconds?: number
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
