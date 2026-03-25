@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,23 +9,7 @@ const corsHeaders = {
 
 const MAX_INPUT_LENGTH = 2000;
 
-// Simple in-memory rate limiter (per-instance)
-const rateLimitMap = new Map<string, number[]>();
-const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
-const RATE_LIMIT_MAX = 10; // max requests per IP per minute
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const timestamps = rateLimitMap.get(ip) || [];
-  const recent = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
-  if (recent.length >= RATE_LIMIT_MAX) return true;
-  recent.push(now);
-  rateLimitMap.set(ip, recent);
-  return false;
-}
-
 function sanitizeInput(input: string): string {
-  // Truncate and strip control characters (keep newlines/tabs for readability)
   return input
     .slice(0, MAX_INPUT_LENGTH)
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
@@ -35,13 +20,25 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
 
   try {
-    // Rate limiting by IP
     const clientIP =
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       req.headers.get("cf-connecting-ip") ||
       "unknown";
 
-    if (isRateLimited(clientIP)) {
+    // Database-backed rate limiting
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const { data: isLimited } = await supabase.rpc("check_rate_limit", {
+      p_ip: clientIP,
+      p_endpoint: "analyze-problem",
+      p_window_seconds: 60,
+      p_max_requests: 10,
+    });
+
+    if (isLimited) {
       return new Response(
         JSON.stringify({ error: "Too many requests. Please wait a moment and try again." }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -51,7 +48,6 @@ serve(async (req) => {
     const body = await req.json();
     const problem = body?.problem;
 
-    // Input validation
     if (!problem || typeof problem !== "string" || problem.trim().length === 0) {
       return new Response(JSON.stringify({ error: "Please describe your problem." }), {
         status: 400,
@@ -169,8 +165,7 @@ serve(async (req) => {
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
+      console.error("AI gateway error:", response.status);
       return new Response(
         JSON.stringify({ error: "An unexpected error occurred. Please try again." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

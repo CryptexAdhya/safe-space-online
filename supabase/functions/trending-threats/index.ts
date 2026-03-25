@@ -6,14 +6,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
 const CACHE_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours
-const LOCK_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes - if lock is older than this, consider it stale
+const LOCK_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
 
 async function fetchFreshThreats() {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
   const today = new Date().toISOString().split("T")[0];
@@ -39,14 +36,14 @@ Return a JSON object with this exact structure:
       "rank": 1,
       "name": "Short threat name",
       "description": "2-3 sentence simple explanation of this threat",
-      "real_world_example": "A specific, real recent incident or campaign (mention real company names, countries, dates, or statistics when possible)",
+      "real_world_example": "A specific, real recent incident or campaign",
       "how_it_works": "Step-by-step how criminals carry out this attack, in simple words",
       "warning_signs": ["sign 1", "sign 2", "sign 3"],
       "what_to_do": ["action 1", "action 2", "action 3"],
       "risk_level": "Very High" or "High" or "Medium",
       "trend": "Rising Fast" or "Rising" or "Most Common" or "Very Common",
       "affected_countries": ["list of most affected countries/regions"],
-      "victims_profile": "Who is most targeted (e.g. elderly, students, job seekers)"
+      "victims_profile": "Who is most targeted"
     }
   ]
 }
@@ -69,8 +66,7 @@ Requirements:
   });
 
   if (!response.ok) {
-    const errText = await response.text();
-    console.error("AI Gateway error:", errText);
+    console.error("AI Gateway error:", response.status);
     throw new Error(`AI request failed: ${response.status}`);
   }
 
@@ -86,7 +82,30 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Rate limiting
+    const clientIP =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("cf-connecting-ip") ||
+      "unknown";
+
+    const { data: isLimited } = await supabase.rpc("check_rate_limit", {
+      p_ip: clientIP,
+      p_endpoint: "trending-threats",
+      p_window_seconds: 60,
+      p_max_requests: 20,
+    });
+
+    if (isLimited) {
+      return new Response(
+        JSON.stringify({ error: "Too many requests. Please wait a moment and try again." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Check cache (id=1 is the data row)
     const { data: cached } = await supabase
@@ -98,7 +117,6 @@ Deno.serve(async (req) => {
     if (cached) {
       const age = Date.now() - new Date(cached.fetched_at).getTime();
       if (age < CACHE_DURATION_MS) {
-        console.log("Serving cached threats, age:", Math.round(age / 60000), "min");
         return new Response(JSON.stringify(cached.data), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -116,14 +134,12 @@ Deno.serve(async (req) => {
     if (lockRow) {
       const lockAge = Date.now() - new Date(lockRow.fetched_at).getTime();
       if (lockAge < LOCK_TIMEOUT_MS) {
-        // Another instance is already refreshing; serve stale cache if available
+        // Another instance is refreshing; serve stale cache if available
         if (cached) {
-          console.log("Lock active, serving stale cache");
           return new Response(JSON.stringify(cached.data), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        // No cache at all — wait briefly isn't viable in serverless, return error
         return new Response(
           JSON.stringify({ error: "Threat data is being updated. Please try again in a moment." }),
           { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -136,7 +152,6 @@ Deno.serve(async (req) => {
       .from("threat_cache")
       .upsert({ id: 2, data: { status: "refreshing" }, fetched_at: now });
 
-    console.log("Fetching fresh threat data from AI...");
     let freshData;
     try {
       freshData = await fetchFreshThreats();
