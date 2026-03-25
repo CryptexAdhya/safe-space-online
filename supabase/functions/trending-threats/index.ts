@@ -11,6 +11,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const CACHE_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours
+const LOCK_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes - if lock is older than this, consider it stale
 
 async function fetchFreshThreats() {
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -87,7 +88,7 @@ Deno.serve(async (req) => {
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Check cache
+    // Check cache (id=1 is the data row)
     const { data: cached } = await supabase
       .from("threat_cache")
       .select("data, fetched_at")
@@ -104,9 +105,45 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Fetch fresh data
+    // Use id=2 as a lock row to prevent concurrent refreshes
+    const now = new Date().toISOString();
+    const { data: lockRow } = await supabase
+      .from("threat_cache")
+      .select("fetched_at")
+      .eq("id", 2)
+      .maybeSingle();
+
+    if (lockRow) {
+      const lockAge = Date.now() - new Date(lockRow.fetched_at).getTime();
+      if (lockAge < LOCK_TIMEOUT_MS) {
+        // Another instance is already refreshing; serve stale cache if available
+        if (cached) {
+          console.log("Lock active, serving stale cache");
+          return new Response(JSON.stringify(cached.data), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        // No cache at all — wait briefly isn't viable in serverless, return error
+        return new Response(
+          JSON.stringify({ error: "Threat data is being updated. Please try again in a moment." }),
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // Acquire lock
+    await supabase
+      .from("threat_cache")
+      .upsert({ id: 2, data: { status: "refreshing" }, fetched_at: now });
+
     console.log("Fetching fresh threat data from AI...");
-    const freshData = await fetchFreshThreats();
+    let freshData;
+    try {
+      freshData = await fetchFreshThreats();
+    } finally {
+      // Release lock
+      await supabase.from("threat_cache").delete().eq("id", 2);
+    }
 
     // Upsert cache
     await supabase
