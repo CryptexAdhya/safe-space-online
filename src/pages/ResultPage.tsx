@@ -1,4 +1,4 @@
-import { useSearchParams, Link } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
@@ -23,14 +23,18 @@ const sectionMeta: Record<string, { icon: React.ReactNode; color: string }> = {
 };
 
 const ResultPage = () => {
-  const [params] = useSearchParams();
-  const query = params.get("q") || "";
+  const location = useLocation();
+  const navigate = useNavigate();
+  const query = (location.state as { problem?: string })?.problem || "";
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!query) return;
+    if (!query) {
+      navigate("/", { replace: true });
+      return;
+    }
 
     const fetchAnalysis = async () => {
       setLoading(true);
@@ -51,7 +55,7 @@ const ResultPage = () => {
     };
 
     fetchAnalysis();
-  }, [query]);
+  }, [query, navigate]);
 
   return (
     <div className="container max-w-2xl py-8">
@@ -63,10 +67,12 @@ const ResultPage = () => {
       </Link>
 
       {/* User query */}
-      <div className="mb-6 rounded-lg border border-border bg-secondary/50 p-4">
-        <p className="text-xs font-medium text-muted-foreground mb-1">Your concern:</p>
-        <p className="font-body text-sm text-foreground">"{query}"</p>
-      </div>
+      {query && (
+        <div className="mb-6 rounded-lg border border-border bg-secondary/50 p-4">
+          <p className="text-xs font-medium text-muted-foreground mb-1">Your concern:</p>
+          <p className="font-body text-sm text-foreground">"{query}"</p>
+        </div>
+      )}
 
       {loading && (
         <div className="flex flex-col items-center justify-center py-16 gap-4">

@@ -26,7 +26,7 @@ const Index = () => {
 
   const handleSubmit = () => {
     if (!problem.trim()) return;
-    navigate(`/result?q=${encodeURIComponent(problem.trim())}`);
+    navigate('/result', { state: { problem: problem.trim() } });
   };
 
   return (
