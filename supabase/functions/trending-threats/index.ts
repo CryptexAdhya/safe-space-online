@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("Error fetching trending threats:", error);
     return new Response(
-      JSON.stringify({ error: error.message || "Failed to fetch trending threats" }),
+      JSON.stringify({ error: "Could not load threat data. Please try again later." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
