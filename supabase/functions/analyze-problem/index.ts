@@ -33,6 +33,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Per-IP rate limit
     const { data: isLimited } = await supabase.rpc("check_rate_limit", {
       p_ip: clientIP,
       p_endpoint: "analyze-problem",
@@ -44,6 +45,21 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Too many requests. Please wait a moment and try again." }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Global rate limit to cap total AI spend regardless of IP manipulation
+    const { data: isGloballyLimited } = await supabase.rpc("check_rate_limit", {
+      p_ip: "_global_",
+      p_endpoint: "analyze-problem",
+      p_window_seconds: 3600,
+      p_max_requests: 200,
+    });
+
+    if (isGloballyLimited) {
+      return new Response(
+        JSON.stringify({ error: "Service is temporarily at capacity. Please try again later." }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
