@@ -88,9 +88,11 @@ Deno.serve(async (req) => {
     );
 
     // Rate limiting
+    // Prefer infrastructure-injected headers that cannot be spoofed by the client
     const clientIP =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-real-ip") ||
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       "unknown";
 
     const { data: isLimited } = await supabase.rpc("check_rate_limit", {
