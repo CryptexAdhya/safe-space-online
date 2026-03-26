@@ -88,11 +88,14 @@ Deno.serve(async (req) => {
     );
 
     // Rate limiting
+    // Prefer infrastructure-injected headers that cannot be spoofed by the client
     const clientIP =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-real-ip") ||
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       "unknown";
 
+    // Per-IP rate limit
     const { data: isLimited } = await supabase.rpc("check_rate_limit", {
       p_ip: clientIP,
       p_endpoint: "trending-threats",
@@ -104,6 +107,21 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Too many requests. Please wait a moment and try again." }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Global rate limit to cap total AI spend regardless of IP manipulation
+    const { data: isGloballyLimited } = await supabase.rpc("check_rate_limit", {
+      p_ip: "_global_",
+      p_endpoint: "trending-threats",
+      p_window_seconds: 3600,
+      p_max_requests: 100,
+    });
+
+    if (isGloballyLimited) {
+      return new Response(
+        JSON.stringify({ error: "Service is temporarily at capacity. Please try again later." }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
