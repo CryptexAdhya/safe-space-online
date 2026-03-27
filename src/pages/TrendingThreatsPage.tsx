@@ -221,7 +221,7 @@ const TrendingThreatsPage = () => {
           <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-8 text-center">
             <AlertTriangle className="mx-auto h-8 w-8 text-destructive mb-3" />
             <p className="text-sm text-destructive font-medium mb-4">{error}</p>
-            <Button onClick={fetchThreats} variant="outline" className="gap-2">
+            <Button onClick={() => fetchThreats()} variant="outline" className="gap-2">
               <RefreshCw className="h-4 w-4" /> Try Again
             </Button>
           </div>
