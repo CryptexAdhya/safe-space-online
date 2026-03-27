@@ -6,6 +6,7 @@ import {
   ChevronLeft, Eye, Zap, Phone, Lightbulb, HelpCircle, Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import FollowUpChat from "@/components/FollowUpChat";
 
 interface AnalysisResult {
   title: string;
