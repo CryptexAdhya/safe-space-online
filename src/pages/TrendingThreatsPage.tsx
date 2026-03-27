@@ -154,11 +154,13 @@ const TrendingThreatsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchThreats = async () => {
+  const fetchThreats = async (force = false) => {
     setLoading(true);
     setError(null);
     try {
-      const { data: result, error: fnError } = await supabase.functions.invoke("trending-threats");
+      const { data: result, error: fnError } = await supabase.functions.invoke("trending-threats", {
+        body: force ? { force: true } : {},
+      });
       if (fnError) throw fnError;
       if (result?.error) throw new Error(result.error);
       setData(result);
