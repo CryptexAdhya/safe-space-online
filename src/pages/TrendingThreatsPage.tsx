@@ -154,11 +154,13 @@ const TrendingThreatsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchThreats = async () => {
+  const fetchThreats = async (force = false) => {
     setLoading(true);
     setError(null);
     try {
-      const { data: result, error: fnError } = await supabase.functions.invoke("trending-threats");
+      const { data: result, error: fnError } = await supabase.functions.invoke("trending-threats", {
+        body: force ? { force: true } : {},
+      });
       if (fnError) throw fnError;
       if (result?.error) throw new Error(result.error);
       setData(result);
@@ -219,7 +221,7 @@ const TrendingThreatsPage = () => {
           <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-8 text-center">
             <AlertTriangle className="mx-auto h-8 w-8 text-destructive mb-3" />
             <p className="text-sm text-destructive font-medium mb-4">{error}</p>
-            <Button onClick={fetchThreats} variant="outline" className="gap-2">
+            <Button onClick={() => fetchThreats()} variant="outline" className="gap-2">
               <RefreshCw className="h-4 w-4" /> Try Again
             </Button>
           </div>
@@ -236,7 +238,7 @@ const TrendingThreatsPage = () => {
 
             {/* Refresh */}
             <div className="mt-6 text-center">
-              <Button onClick={fetchThreats} variant="outline" size="sm" className="gap-2">
+              <Button onClick={() => fetchThreats(true)} variant="outline" size="sm" className="gap-2">
                 <RefreshCw className="h-3.5 w-3.5" /> Refresh Threats
               </Button>
             </div>
