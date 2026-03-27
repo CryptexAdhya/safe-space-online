@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
       .eq("id", 1)
       .maybeSingle();
 
-    if (cached) {
+    if (cached && !force) {
       const age = Date.now() - new Date(cached.fetched_at).getTime();
       if (age < CACHE_DURATION_MS) {
         return new Response(JSON.stringify(cached.data), {
