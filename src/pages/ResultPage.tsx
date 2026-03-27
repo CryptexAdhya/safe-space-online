@@ -6,6 +6,7 @@ import {
   ChevronLeft, Eye, Zap, Phone, Lightbulb, HelpCircle, Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import FollowUpChat from "@/components/FollowUpChat";
 
 interface AnalysisResult {
   title: string;
@@ -133,6 +134,15 @@ const ResultPage = () => {
               );
             })}
           </div>
+
+          {/* Follow-up chat */}
+          <FollowUpChat
+            context={{
+              problem: query,
+              title: analysis.title,
+              term: analysis.term,
+            }}
+          />
 
           {/* Learn more link */}
           <div className="mt-8 rounded-lg border border-border bg-card p-5 shadow-card">
