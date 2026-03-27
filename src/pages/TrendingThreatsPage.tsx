@@ -238,7 +238,7 @@ const TrendingThreatsPage = () => {
 
             {/* Refresh */}
             <div className="mt-6 text-center">
-              <Button onClick={fetchThreats} variant="outline" size="sm" className="gap-2">
+              <Button onClick={() => fetchThreats(true)} variant="outline" size="sm" className="gap-2">
                 <RefreshCw className="h-3.5 w-3.5" /> Refresh Threats
               </Button>
             </div>
