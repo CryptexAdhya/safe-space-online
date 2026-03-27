@@ -135,6 +135,15 @@ const ResultPage = () => {
             })}
           </div>
 
+          {/* Follow-up chat */}
+          <FollowUpChat
+            context={{
+              problem: query,
+              title: analysis.title,
+              term: analysis.term,
+            }}
+          />
+
           {/* Learn more link */}
           <div className="mt-8 rounded-lg border border-border bg-card p-5 shadow-card">
             <div className="flex items-center gap-2 text-primary mb-2">
