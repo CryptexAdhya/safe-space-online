@@ -55,12 +55,32 @@ const TrendingThreatsSection = () => {
 
   useEffect(() => {
     fetchThreats();
-    // Auto-refresh every hour while page is open
-    const id = setInterval(() => fetchThreats(true), 60 * 60 * 1000);
-    return () => clearInterval(id);
+    // Auto-refresh every 10 minutes while the page is open
+    const id = setInterval(() => fetchThreats(true), 10 * 60 * 1000);
+    // Refresh when the tab regains focus / becomes visible
+    const onVisible = () => {
+      if (document.visibilityState === "visible") fetchThreats(true);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
 
   const top = data?.threats?.slice(0, 5) ?? [];
+
+  const updatedLabel = (() => {
+    if (!data?.last_updated) return null;
+    const t = new Date(data.last_updated).getTime();
+    if (Number.isNaN(t)) return data.last_updated;
+    const mins = Math.max(0, Math.round((Date.now() - t) / 60000));
+    if (mins < 1) return "just now";
+    if (mins === 1) return "1 min ago";
+    if (mins < 60) return `${mins} min ago`;
+    const hrs = Math.round(mins / 60);
+    return hrs === 1 ? "1 hour ago" : `${hrs} hours ago`;
+  })();
 
   return (
     <section className="container">
