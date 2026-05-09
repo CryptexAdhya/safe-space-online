@@ -82,10 +82,10 @@ Requirements:
         },
         {
           role: "user",
-          content: `List the 12 most trending and actively happening cybercrimes in the world right now as of ${today}. Include real recent incidents, statistics, and named campaigns. Focus on what everyday people are actually falling victim to.`
+          content: `List the 12 most trending and actively happening cybercrimes in the world right now as of ${today} (hour ${hourBucket}, variation seed ${seed}). Prioritize and emphasize threats from this angle this time: ${focusList}. Pick fresh, recent real-world incidents — do NOT repeat the same generic examples each time. Vary the named campaigns, companies and countries you mention compared to a typical list. Focus on what everyday people are actually falling victim to.`
         }
       ],
-      temperature: 0.3,
+      temperature: 0.9,
     }),
   });
 
