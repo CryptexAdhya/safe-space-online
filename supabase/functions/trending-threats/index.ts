@@ -6,10 +6,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const CACHE_DURATION_MS = 1 * 60 * 60 * 1000; // 1 hour
+const CACHE_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 const LOCK_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
 
-async function fetchFreshThreats() {
+async function fetchFreshThreats(previousNames: string[] = []) {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
