@@ -136,8 +136,22 @@ const TrendingThreatsSection = () => {
             )}
 
             {error && !loading && (
-              <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-                <AlertTriangle className="h-4 w-4" /> {error}
+              <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                <div className="flex items-center gap-2 text-destructive">
+                  <AlertTriangle className="h-4 w-4 shrink-0" /> {error}
+                </div>
+                <button
+                  onClick={() => fetchThreats(true)}
+                  className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-destructive underline-offset-2 hover:underline"
+                >
+                  <RefreshCw className="h-3 w-3" /> Try again
+                </button>
+              </div>
+            )}
+
+            {!loading && !error && top.length === 0 && (
+              <div className="rounded-md border border-border bg-secondary/40 p-4 text-center text-sm text-muted-foreground">
+                No live threats available right now. Try refreshing in a moment.
               </div>
             )}
 
