@@ -10,6 +10,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { faqData } from "@/data/faqData";
+import TrendingThreatsSection from "@/components/TrendingThreatsSection";
 
 const placeholders = [
   "Someone asked me for my OTP",
@@ -170,6 +171,9 @@ const Index = () => {
           </div>
         </motion.div>
       </section>
+
+      {/* TRENDING THREATS — placed right under Emergency Help for visibility */}
+      <TrendingThreatsSection />
     </div>
   );
 };
