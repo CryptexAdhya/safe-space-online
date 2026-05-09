@@ -1,0 +1,1 @@
+DELETE FROM public.threat_cache WHERE id IN (1,2);
