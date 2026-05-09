@@ -6,10 +6,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const CACHE_DURATION_MS = 1 * 60 * 60 * 1000; // 1 hour
+const CACHE_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 const LOCK_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
 
-async function fetchFreshThreats() {
+async function fetchFreshThreats(previousNames: string[] = []) {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -82,7 +82,11 @@ Requirements:
         },
         {
           role: "user",
-          content: `List the 12 most trending and actively happening cybercrimes in the world right now as of ${today} (hour ${hourBucket}, variation seed ${seed}). Prioritize and emphasize threats from this angle this time: ${focusList}. Pick fresh, recent real-world incidents — do NOT repeat the same generic examples each time. Vary the named campaigns, companies and countries you mention compared to a typical list. Focus on what everyday people are actually falling victim to.`
+          content: `List the 12 most trending and actively happening cybercrimes in the world right now as of ${today} (hour ${hourBucket}, variation seed ${seed}). Prioritize and emphasize threats from this angle this time: ${focusList}. Pick fresh, recent real-world incidents — do NOT repeat the same generic examples each time. Vary the named campaigns, companies and countries you mention compared to a typical list. Focus on what everyday people are actually falling victim to.${
+            previousNames.length
+              ? `\n\nIMPORTANT: The previous refresh returned these threat names — choose DIFFERENT angles, different named incidents, and a different ranking order this time. At least 6 of your 12 entries must NOT match these names: ${previousNames.join(", ")}.`
+              : ""
+          }`
         }
       ],
       temperature: 0.9,
@@ -197,7 +201,12 @@ Deno.serve(async (req) => {
 
     let freshData;
     try {
-      freshData = await fetchFreshThreats();
+      const prevNames: string[] = Array.isArray(cached?.data?.threats)
+        ? cached!.data.threats.map((t: { name?: string }) => t?.name).filter(Boolean).slice(0, 12)
+        : [];
+      freshData = await fetchFreshThreats(prevNames);
+      // Stamp with precise timestamp so the UI can show "X min ago"
+      freshData.last_updated = new Date().toISOString();
     } finally {
       // Release lock
       await supabase.from("threat_cache").delete().eq("id", 2);
