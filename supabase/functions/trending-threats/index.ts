@@ -201,7 +201,12 @@ Deno.serve(async (req) => {
 
     let freshData;
     try {
-      freshData = await fetchFreshThreats();
+      const prevNames: string[] = Array.isArray(cached?.data?.threats)
+        ? cached!.data.threats.map((t: { name?: string }) => t?.name).filter(Boolean).slice(0, 12)
+        : [];
+      freshData = await fetchFreshThreats(prevNames);
+      // Stamp with precise timestamp so the UI can show "X min ago"
+      freshData.last_updated = new Date().toISOString();
     } finally {
       // Release lock
       await supabase.from("threat_cache").delete().eq("id", 2);
