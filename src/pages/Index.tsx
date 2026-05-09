@@ -171,7 +171,9 @@ const Index = () => {
           </div>
         </motion.div>
       </section>
-    </div>
+
+      {/* TRENDING THREATS — placed right under Emergency Help for visibility */}
+      <TrendingThreatsSection />
   );
 };
 
