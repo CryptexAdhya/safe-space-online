@@ -108,7 +108,12 @@ const TrendingThreatsSection = () => {
                   </span>
                 </div>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  Real cyber attacks happening right now — updated hourly.
+                  Real cyber attacks happening right now.
+                  {updatedLabel && (
+                    <span className="ml-1 text-foreground/80">
+                      Updated {updatedLabel}.
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
