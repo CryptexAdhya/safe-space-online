@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Allow public read" ON public.threat_cache;
