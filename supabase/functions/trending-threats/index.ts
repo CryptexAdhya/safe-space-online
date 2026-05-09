@@ -82,7 +82,11 @@ Requirements:
         },
         {
           role: "user",
-          content: `List the 12 most trending and actively happening cybercrimes in the world right now as of ${today} (hour ${hourBucket}, variation seed ${seed}). Prioritize and emphasize threats from this angle this time: ${focusList}. Pick fresh, recent real-world incidents — do NOT repeat the same generic examples each time. Vary the named campaigns, companies and countries you mention compared to a typical list. Focus on what everyday people are actually falling victim to.`
+          content: `List the 12 most trending and actively happening cybercrimes in the world right now as of ${today} (hour ${hourBucket}, variation seed ${seed}). Prioritize and emphasize threats from this angle this time: ${focusList}. Pick fresh, recent real-world incidents — do NOT repeat the same generic examples each time. Vary the named campaigns, companies and countries you mention compared to a typical list. Focus on what everyday people are actually falling victim to.${
+            previousNames.length
+              ? `\n\nIMPORTANT: The previous refresh returned these threat names — choose DIFFERENT angles, different named incidents, and a different ranking order this time. At least 6 of your 12 entries must NOT match these names: ${previousNames.join(", ")}.`
+              : ""
+          }`
         }
       ],
       temperature: 0.9,
