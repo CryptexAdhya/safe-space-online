@@ -13,7 +13,31 @@ async function fetchFreshThreats() {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-  const today = new Date().toISOString().split("T")[0];
+  const now = new Date();
+  const today = now.toISOString().split("T")[0];
+  const hourBucket = `${today}-${now.getUTCHours()}`;
+  const seed = Math.floor(Math.random() * 1_000_000);
+  const focusPool = [
+    "AI-generated voice cloning scams",
+    "deepfake video extortion",
+    "QR code phishing (quishing)",
+    "crypto investment 'pig butchering'",
+    "fake job offer scams on LinkedIn/Telegram",
+    "OTP and SIM-swap fraud",
+    "romance scams on dating apps",
+    "fake customer support / refund scams",
+    "ransomware on small businesses",
+    "supply-chain npm/PyPI package attacks",
+    "browser cookie-stealer malware",
+    "Google/Meta ad-based malvertising",
+    "fake KYC and bank update scams",
+    "courier / parcel delivery SMS scams",
+    "Telegram task / part-time job scams",
+    "AI chatbot impersonation phishing",
+  ];
+  // Rotate focus by hour + random pick to ensure variety each refresh
+  const shuffled = [...focusPool].sort(() => Math.random() - 0.5);
+  const focusList = shuffled.slice(0, 6).join(", ");
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
