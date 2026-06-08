@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/accordion";
 import { faqData } from "@/data/faqData";
 import TrendingThreatsSection from "@/components/TrendingThreatsSection";
+import ElderlyAdvisory from "@/components/ElderlyAdvisory";
 
 const placeholders = [
   "Someone asked me for my OTP",
