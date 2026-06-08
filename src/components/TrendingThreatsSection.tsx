@@ -33,13 +33,14 @@ const TrendingThreatsSection = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchThreats = async (force = false) => {
-    if (force) setRefreshing(true); else setLoading(true);
+  const fetchThreats = async (force = true) => {
+    if (data) setRefreshing(true); else setLoading(true);
     setError(null);
     try {
+      // Always request fresh data so each page load / refresh shows new threats
       const { data: result, error: fnError } = await supabase.functions.invoke(
         "trending-threats",
-        { body: force ? { force: true } : {} },
+        { body: { force: true } },
       );
       if (fnError) throw fnError;
       if (result?.error) throw new Error(result.error);
