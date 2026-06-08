@@ -175,6 +175,9 @@ const Index = () => {
 
       {/* TRENDING THREATS — placed right under Emergency Help for visibility */}
       <TrendingThreatsSection />
+
+      {/* ELDERLY ADVISORY — multi-language safety tips */}
+      <ElderlyAdvisory />
     </div>
   );
 };
